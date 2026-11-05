@@ -1,0 +1,26 @@
+{
+  "name": "reservepay-js",
+  "version": "0.0.1",
+  "description": "JS clients for Reservepay WebFunction APIs",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "reservepay",
+    "payments",
+    "api",
+    "client",
+    "merchants",
+    "webfunction"
+  ],
+  "author": "Reservepay",
+  "license": "MIT",
+  "dependencies": {
+    "webfunction": "^0.4.0"
+  }
+}
