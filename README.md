@@ -7,7 +7,7 @@ The clients (found in `src/clients/`) were generated using the [WebFunction CLI 
 
 ## Usage
 
-Each import provides an async `createClient` function which will return a fully configured client, ready to access the associated API.
+Each import (`Merchant`, `SDK`, `Terminal`) provides an async `createClient` function which will return a fully configured client, ready to access the associated API.
 
 ```js
 import { Merchant } from "reservepay-js"
