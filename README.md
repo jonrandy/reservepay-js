@@ -17,5 +17,4 @@ const merchantClient = Merchant.createClient({
 })
 
 const availableApiVersions = await merchantClient.availableApiVersions()
-````
-
+```
