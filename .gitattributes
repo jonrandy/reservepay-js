@@ -1,0 +1,11 @@
+* text=auto
+*.sh text eol=lf
+
+* export-ignore
+/package.json -export-ignore
+/README.md -export-ignore
+/LICENSE.txt -export-ignore
+/src -export-ignore
+/src/** -export-ignore
+
+/src/clients/** linguist-generated
