@@ -78,7 +78,7 @@ import { Client } from 'webfunction';
  * @property {string} display_name - The display name of the payment method.
  * @property {string} flow - The flow of the payment method.
  * @property {string} category - The category of the payment method.
- * @property {("WEB"|"IOS"|"ANDROID"|"TERMINAL")} platforms - The platforms on which the payment method is available.
+ * @property {Array<"WEB"|"IOS"|"ANDROID"|"TERMINAL">} platforms - The platforms on which the payment method is available.
  */
 
 /**
@@ -414,6 +414,8 @@ import { Client } from 'webfunction';
  * @property {string} [authorized_at] - Filter by authorize date/time. Supports: specific date (YYYY-MM-DD), datetime (ISO8601), date range (YYYY-MM-DD..YYYY-MM-DD), datetime range (ISO8601..ISO8601), or keywords (today, yesterday, `this_week`, `last_week`, `this_month`, `last_month`)
  * @property {string} [captured_at] - Filter by capture date/time. Supports: specific date (YYYY-MM-DD), datetime (ISO8601), date range (YYYY-MM-DD..YYYY-MM-DD), datetime range (ISO8601..ISO8601), or keywords (today, yesterday, `this_week`, `last_week`, `this_month`, `last_month`)
  * @property {string} [payment_method] - Filter by payment method name. Examples: 'card', 'promptpay', 'k_plus'
+ * @property {string} [payment_method_category] - Filter by payment method category, as configured for each payment method. Returns payments from any payment method in that category. Must match the category exactly, including case. Examples: 'mobile_banking', 'wallet'
+ * @property {string} [issuer_id] - Filter by installment issuer ID, as returned by `list-installment-issuers`. Matches payments made with a card from that issuer, and installment payments whose installment plan is for that issuer. Combine with `payment_method: 'installment'` to return installment payments only. Examples: `bng_1234567890`
  * @property {string} [currency] - Filter by currency code. Examples: 'THB', 'USD'. Case-insensitive.
  * @property {string} [amount] - Filter by amount. Supports: exact amount (1000), range (1000..5000), or boundless ranges (1000.. or ..5000). Amounts are in the smallest currency unit (cents for USD).
  * @property {string} [contact_id] - Filter by contact ID. Accepts either internal UID (starting with `ctc_` ) or external ID. Examples: `ctc_1234567890` or `ext_1234567890`
@@ -449,6 +451,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [card_masked_number] - The card number with the first 6 and last 2 digits visible and the rest masked. Null for non-card payment methods or card payments without a token.
  * @property {(string|null)} [card_network] - The card network, such as visa or mastercard. Null for non-card payment methods or card payments without a token.
  * @property {(string|null)} [cardholder_name] - The cardholder's name as entered on the card. Null for non-card payment methods, card payments without a token, or when no name was entered.
+ * @property {(string|null)} [card_expiration_date] - The card's expiration date as captured, usually in MM/YY format. Null for non-card payment methods, card payments without a token, or when no expiration date was captured.
  * @property {number} created_at - The creation timestamp (Unix timestamp).
  * @property {(number|null)} [authorized_at] - When the payment was authorized (Unix timestamp).
  * @property {(number|null)} [captured_at] - When the payment was captured (Unix timestamp).
@@ -477,6 +480,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [terminal_id] - The ID of the terminal that created the payment, if any.
  * @property {(string|null)} [payment_link_id] - The ID of the payment link that created the payment, if any.
  * @property {(string|null)} [payment_session_id] - The ID of the payment session associated with this payment, if any.
+ * @property {(string|null)} [checkout_id] - The ID of the checkout associated with this payment, if any.
  * @property {(number|null)} [installment_term] - The number of monthly installments. Null for non-installment payments.
  * @property {("customer"|"merchant"|null)} [interest_bearer] - Who bears the installment interest. Null for non-installment payments.
  * @property {(string|null)} [installment_interest_rate] - The monthly interest rate of the installment plan as a percentage on a 0-100 scale (e.g. `1.5` means 1.5% per month), snapshotted when the payment method was selected. Not zeroed when the merchant bears the interest; see `interest_bearer`. Null for non-installment payments.
@@ -552,7 +556,11 @@ import { Client } from 'webfunction';
  * @typedef {Object} FilterTerminalsArgs
  * @property {number} [per_page] - Number of terminals to return per page. Default: 10, Maximum: 100
  * @property {number} [page] - Page number for pagination. Default: 1 (first page)
- * @property {string} [terms] - Full-text search across terminal content. Searches terminal name, external ID, and branch name. Uses fuzzy matching for partial text matches.
+ * @property {string} [name] - Filter by terminal name (substring, case-insensitive).
+ * @property {string} [branch_name] - Filter by terminal branch name (substring, case-insensitive).
+ * @property {string} [terms] - Free-text search across terminal name, terminal ID, external ID, and branch name (substring, case-insensitive).
+ * @property {string} [created_at] - Filter by creation date. Supports: specific date (YYYY-MM-DD), ISO 8601 datetime, date or datetime range (start..end), or keywords (today, yesterday, `this_week`, `last_week`, `this_month`, `last_month`). Calendar boundaries use the merchant provider timezone; a single date or datetime selects that local day, while datetime range endpoints retain their exact times.
+ * @property {string} [connected_at] - Filter by connection date. Supports: specific date (YYYY-MM-DD), ISO 8601 datetime, date or datetime range (start..end), or keywords (today, yesterday, `this_week`, `last_week`, `this_month`, `last_month`). Calendar boundaries use the merchant provider timezone; a single date or datetime selects that local day, while datetime range endpoints retain their exact times.
  */
 
 /**
@@ -725,7 +733,7 @@ import { Client } from 'webfunction';
  * @property {number} amount - The disputed amount in subunits.
  * @property {string} currency - The 3-letter ISO currency code.
  * @property {string} reason - The reason code for the dispute.
- * @property {("cancellation_policy"|"cancellation_request_records"|"common_evidence"|"customer_communication"|"device_id_ip_data"|"marketing_materials"|"payment_logs"|"payment_processing_records"|"receipt"|"refund_issuance"|"refund_policy"|"refund_records"|"return_policy"|"shipping_documentation"|"supplier_certification"|"technical_support_logs"|"transaction_history"|"transaction_logs")} suggested_evidence - A list of suggested evidence types for this dispute based on its reason.
+ * @property {Array<"cancellation_policy"|"cancellation_request_records"|"common_evidence"|"customer_communication"|"device_id_ip_data"|"marketing_materials"|"payment_logs"|"payment_processing_records"|"receipt"|"refund_issuance"|"refund_policy"|"refund_records"|"return_policy"|"shipping_documentation"|"supplier_certification"|"technical_support_logs"|"transaction_history"|"transaction_logs">} suggested_evidence - A list of suggested evidence types for this dispute based on its reason.
  * @property {(number|null)} [deadline_at] - The timestamp (Unix) by which a challenge or escalation is required. Failure to escalate or challenge will cause the dispute to be automatically closed in favor of the customer.
  * @property {number} created_at - The timestamp when the dispute was created.
  * @property {Array<FeeAttributes>} fees - The fees associated with the dispute.
@@ -788,7 +796,7 @@ import { Client } from 'webfunction';
  * @property {string} name - The name of the key that you provided when creating it.
  * @property {boolean} revoked - Whether the key is revoked. If it is revoked, it cannot be used to make API requests.
  * @property {number} created_at - The timestamp of the key creation as a Unix timestamp.
- * @property {("authorize_payout"|"manage_contacts"|"manage_developer_settings"|"manage_disputes"|"manage_payouts"|"manage_plan"|"manage_settings"|"manage_team"|"manage_terminals"|"manage_transactions"|"view_contacts"|"view_disputes"|"view_payouts"|"view_plan"|"view_settings"|"view_statements"|"view_team"|"view_transactions")} permissions - Permission tokens granted to this key.
+ * @property {Array<"authorize_payout"|"manage_contacts"|"manage_developer_settings"|"manage_disputes"|"manage_payouts"|"manage_plan"|"manage_settings"|"manage_team"|"manage_terminals"|"manage_transactions"|"view_contacts"|"view_disputes"|"view_payouts"|"view_plan"|"view_settings"|"view_statements"|"view_team"|"view_transactions">} permissions - Permission tokens granted to this key.
  */
 
 /**
@@ -811,6 +819,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [card_masked_number] - The card number with the first 6 and last 2 digits visible and the rest masked. Null for non-card payment methods or card payments without a token.
  * @property {(string|null)} [card_network] - The card network, such as visa or mastercard. Null for non-card payment methods or card payments without a token.
  * @property {(string|null)} [cardholder_name] - The cardholder's name as entered on the card. Null for non-card payment methods, card payments without a token, or when no name was entered.
+ * @property {(string|null)} [card_expiration_date] - The card's expiration date as captured, usually in MM/YY format. Null for non-card payment methods, card payments without a token, or when no expiration date was captured.
  * @property {number} created_at - The creation timestamp (Unix timestamp).
  * @property {(number|null)} [authorized_at] - When the payment was authorized (Unix timestamp).
  * @property {(number|null)} [captured_at] - When the payment was captured (Unix timestamp).
@@ -839,6 +848,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [terminal_id] - The ID of the terminal that created the payment, if any.
  * @property {(string|null)} [payment_link_id] - The ID of the payment link that created the payment, if any.
  * @property {(string|null)} [payment_session_id] - The ID of the payment session associated with this payment, if any.
+ * @property {(string|null)} [checkout_id] - The ID of the checkout associated with this payment, if any.
  * @property {(number|null)} [installment_term] - The number of monthly installments. Null for non-installment payments.
  * @property {("customer"|"merchant"|null)} [interest_bearer] - Who bears the installment interest. Null for non-installment payments.
  * @property {(string|null)} [installment_interest_rate] - The monthly interest rate of the installment plan as a percentage on a 0-100 scale (e.g. `1.5` means 1.5% per month), snapshotted when the payment method was selected. Not zeroed when the merchant bears the interest; see `interest_bearer`. Null for non-installment payments.
@@ -997,7 +1007,7 @@ import { Client } from 'webfunction';
  * @property {("HTTP"|"HTTPS")} protocol - The protocol used for sending webhook events (e.g., `HTTPS`).
  * @property {("SHA256"|"HMAC_SHA256"|"ED25519")} signature_type - The type of signature that will be sent in the header of webhooks.
  * @property {string} verification_key - The key used to verify webhook signatures.
- * @property {("PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED")} events - List of event types that this webhook endpoint will receive.
+ * @property {Array<"PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED">} events - List of event types that this webhook endpoint will receive.
  * @property {number} created_at - The timestamp of the key creation as a Unix timestamp.
  */
 
@@ -1238,7 +1248,7 @@ import { Client } from 'webfunction';
  * @property {number} amount - The disputed amount in subunits.
  * @property {string} currency - The 3-letter ISO currency code.
  * @property {string} reason - The reason code for the dispute.
- * @property {("cancellation_policy"|"cancellation_request_records"|"common_evidence"|"customer_communication"|"device_id_ip_data"|"marketing_materials"|"payment_logs"|"payment_processing_records"|"receipt"|"refund_issuance"|"refund_policy"|"refund_records"|"return_policy"|"shipping_documentation"|"supplier_certification"|"technical_support_logs"|"transaction_history"|"transaction_logs")} suggested_evidence - A list of suggested evidence types for this dispute based on its reason.
+ * @property {Array<"cancellation_policy"|"cancellation_request_records"|"common_evidence"|"customer_communication"|"device_id_ip_data"|"marketing_materials"|"payment_logs"|"payment_processing_records"|"receipt"|"refund_issuance"|"refund_policy"|"refund_records"|"return_policy"|"shipping_documentation"|"supplier_certification"|"technical_support_logs"|"transaction_history"|"transaction_logs">} suggested_evidence - A list of suggested evidence types for this dispute based on its reason.
  * @property {(number|null)} [deadline_at] - The timestamp (Unix) by which a challenge or escalation is required. Failure to escalate or challenge will cause the dispute to be automatically closed in favor of the customer.
  * @property {number} created_at - The timestamp when the dispute was created.
  * @property {Array<FeeAttributes>} fees - The fees associated with the dispute.
@@ -1270,6 +1280,12 @@ import { Client } from 'webfunction';
  * @property {boolean} hasPrevious
  * @property {() => Promise<ListDisputesByPaymentPage|null>} nextPage
  * @property {() => Promise<ListDisputesByPaymentPage|null>} previousPage
+ */
+
+/**
+ * @typedef {Object} ListInstallmentIssuersResult
+ * @property {string} issuer_id - The ID of the installment issuer. Use it as `issuer_id` with `filter-payments`.
+ * @property {string} display_name - The display name of the installment issuer, as configured in admin.
  */
 
 /**
@@ -1661,7 +1677,7 @@ import { Client } from 'webfunction';
  * @property {("SHA256"|"HMAC_SHA256"|"ED25519")} [signature_type] - The type of signature with which to sign webhooks.
  * @property {string} api_version - The API version to use for webhook events. Must be a valid date format (YYYY-MM-DD) from the available API versions.
  * @property {string} destination_url - The URL where webhook events will be sent. Must be a valid HTTP/HTTPS URL and match the specified protocol.
- * @property {("PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED")} events - List of events for webhook
+ * @property {Array<"PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED">} events - List of events for webhook
  */
 
 /**
@@ -1766,6 +1782,8 @@ import { Client } from 'webfunction';
  * @property {("color"|"image")} sidebar_background_type - The type of sidebar background to use (color or image).
  * @property {boolean} tile_sidebar_image - Whether to tile the sidebar image to fill the entire sidebar area.
  * @property {boolean} hide_logo - Whether to hide the logo completely from the payment interface.
+ * @property {string} shop_name_font_family - Font family for the shop name shown when no logo is displayed.
+ * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} shop_name_font_variant - Font weight variant for the shop name.
  * @property {string} heading_font_family - Font family for headings.
  * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} heading_font_variant - Font weight variant for headings.
  * @property {string} body_font_family - Font family for body text.
@@ -1794,7 +1812,7 @@ import { Client } from 'webfunction';
  * @typedef {Object} RetrieveBrandingFontResult
  * @property {string} family - The font family name (e.g., 'Noto Sans', 'Roboto').
  * @property {("sans-serif"|"serif"|"monospace"|"display"|"handwriting")} category - The font category that describes the font style and usage.
- * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} variants - Available font weight variants for this font family.
+ * @property {Array<"Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black">} variants - Available font weight variants for this font family.
  */
 
 /**
@@ -1813,6 +1831,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [customer_email] - The email address of the customer
  * @property {(string|null)} [customer_mobile] - The mobile phone number of the customer
  * @property {(string|null)} [customer_name] - The name of the customer
+ * @property {(string|null)} [external_id] - The merchant's internal reference for this checkout. Copied onto the payment when the customer pays.
  * @property {string} redirect_url - The URL where the customer will be redirected to make payment
  * @property {(string|null)} [payment_id] - The unique identifier of the payment associated with this checkout. When nil, the payment has not been paid yet.
  */
@@ -2025,7 +2044,7 @@ import { Client } from 'webfunction';
 /**
  * @typedef {Object} SetMerchantClassificationArgs
  * @property {string} category_code - The 4-digit merchant category code (MCC) that best describes your primary business activity.
- * @property {("DIGITAL_GOODS"|"PHYSICAL_GOODS"|"SERVICES")} product_types - List of product/service types you offer. This helps us enable relevant features and apply appropriate policies for your business. You can select multiple types if your business spans different categories.
+ * @property {Array<"DIGITAL_GOODS"|"PHYSICAL_GOODS"|"SERVICES">} product_types - List of product/service types you offer. This helps us enable relevant features and apply appropriate policies for your business. You can select multiple types if your business spans different categories.
  * @property {number} [expected_monthly_transaction_amount] - The total transaction amount you expect to process each month, in subunits according to ISO 4217. Must be a positive integer greater than 0. E.g., 100000 for 1,000.00 THB. Omit to leave unchanged.
  * @property {number} [expected_maximum_transaction_amount] - The largest amount you expect for a single transaction, in subunits according to ISO 4217. Must be a positive integer greater than 0. E.g., 50000 for 500.00 THB. Omit to leave unchanged.
  */
@@ -2051,6 +2070,7 @@ import { Client } from 'webfunction';
  * @property {string} currency - The three-letter ISO currency code (e.g. THB). Must match the funding currency configured for your provider.
  * @property {("customer"|"merchant")} [interest_bearer] - Overrides who bears installment interest for this checkout. When omitted, the merchant's configured default is used.
  * @property {string} return_url - The URL where we'll redirect your customer after they complete the payment flow. Should be a page that can handle both successful and failed payments. Must be a valid HTTP/HTTPS URL.
+ * @property {string} [external_id] - Your unique reference for this checkout, such as an order or invoice number. It is copied onto the payment when the customer completes checkout, so you can look up the payment later instead of our payment ID. Must be unique within this merchant account's payments when the payment is created. 1–128 characters after trimming leading and trailing whitespace. Must start with a letter or digit. Remaining characters may be letters, digits, periods (`.`), underscores (`_`), colons (`:`), slashes (`/`), or hyphens (`-`). Blank or whitespace-only values are stored as null.
  * @property {string} [customer_id] - Either a Customer ID (starting with `cst_`) or your own external customer identifier. We'll link this payment to an existing customer if found, or create a new customer if not. This helps track payment history per customer.  If you provide your own external ID and a customer with that ID doesn't exist, we'll create a new customer using that ID as their external identifier.
  * @property {string} [customer_email] - Customer's email address. Required if the installation is configured to require email capture.
  * @property {string} [customer_mobile] - Customer's mobile phone number. Required if the installation is configured to require mobile capture.
@@ -2068,6 +2088,7 @@ import { Client } from 'webfunction';
  * @property {(string|null)} [customer_email] - The email address of the customer
  * @property {(string|null)} [customer_mobile] - The mobile phone number of the customer
  * @property {(string|null)} [customer_name] - The name of the customer
+ * @property {(string|null)} [external_id] - The merchant's internal reference for this checkout. Copied onto the payment when the customer pays.
  * @property {string} redirect_url - The URL where the customer will be redirected to make payment
  * @property {(string|null)} [payment_id] - The unique identifier of the payment associated with this checkout. When nil, the payment has not been paid yet.
  */
@@ -2095,7 +2116,7 @@ import { Client } from 'webfunction';
  * @property {string} display_name - The display name of the payment method.
  * @property {string} flow - The flow of the payment method.
  * @property {string} category - The category of the payment method.
- * @property {("WEB"|"IOS"|"ANDROID"|"TERMINAL")} platforms - The platforms on which the payment method is available.
+ * @property {Array<"WEB"|"IOS"|"ANDROID"|"TERMINAL">} platforms - The platforms on which the payment method is available.
  */
 
 /**
@@ -2154,6 +2175,8 @@ import { Client } from 'webfunction';
  * @property {("color"|"image")} [sidebar_background_type] - The type of sidebar background to use (color or image).
  * @property {boolean} [tile_sidebar_image] - Whether to tile the sidebar image to fill the entire sidebar area.
  * @property {boolean} [hide_logo] - Whether to hide the logo completely from the payment interface.
+ * @property {string} [shop_name_font_family] - Font family for the shop name shown when no logo is displayed. Must be a valid Google Font or default font.
+ * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} [shop_name_font_variant] - Font weight variant for the shop name.
  * @property {string} [heading_font_family] - Font family for headings. Must be a valid Google Font or default font.
  * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} [heading_font_variant] - Font weight variant for headings.
  * @property {string} [body_font_family] - Font family for body text. Must be a valid Google Font or default font.
@@ -2361,7 +2384,7 @@ import { Client } from 'webfunction';
  * @property {string} name - The name of the key that you provided when creating it.
  * @property {boolean} revoked - Whether the key is revoked. If it is revoked, it cannot be used to make API requests.
  * @property {number} created_at - The timestamp of the key creation as a Unix timestamp.
- * @property {("authorize_payout"|"manage_contacts"|"manage_developer_settings"|"manage_disputes"|"manage_payouts"|"manage_plan"|"manage_settings"|"manage_team"|"manage_terminals"|"manage_transactions"|"view_contacts"|"view_disputes"|"view_payouts"|"view_plan"|"view_settings"|"view_statements"|"view_team"|"view_transactions")} permissions - Permission tokens granted to this key.
+ * @property {Array<"authorize_payout"|"manage_contacts"|"manage_developer_settings"|"manage_disputes"|"manage_payouts"|"manage_plan"|"manage_settings"|"manage_team"|"manage_terminals"|"manage_transactions"|"view_contacts"|"view_disputes"|"view_payouts"|"view_plan"|"view_settings"|"view_statements"|"view_team"|"view_transactions">} permissions - Permission tokens granted to this key.
  */
 
 /**
@@ -2381,7 +2404,7 @@ import { Client } from 'webfunction';
  * @typedef {Object} PlannedMaintenanceAttributes
  * @property {string} id - Unique identifier of the planned maintenance window.
  * @property {string} service_name - Name of the service undergoing maintenance, in the requested locale.
- * @property {("api"|"vault"|"relay"|"wallet"|"merchant-dashboard"|"website"|"developer")} affected_services - Services affected by the maintenance window.
+ * @property {Array<"api"|"vault"|"relay"|"wallet"|"merchant-dashboard"|"website"|"developer">} affected_services - Services affected by the maintenance window.
  * @property {("pending"|"in_progress"|"completed")} status - Current lifecycle status of the planned maintenance window.
  * @property {number} start_at - Scheduled start time as a Unix timestamp.
  * @property {number} end_at - Scheduled end time as a Unix timestamp.
@@ -2415,7 +2438,7 @@ import { Client } from 'webfunction';
  * @property {number} revision_time - The date and time when the plan was last revised.
  * @property {boolean} selectable - Indicates whether the plan can be selected by the merchant via self-service.
  * @property {number} rank - The ordering of the plan's tier. Selecting a plan whose rank is greater than or equal to the current plan's rank takes effect immediately; selecting a lower rank is scheduled for the start of the next billing month.
- * @property {Array<PlanSkuAttributes>} skus - List of SKUs included in this plan.
+ * @property {Array<PlanSkuAttributes>} skus - List of SKUs the merchant is billed with on this plan. A merchant's custom SKU for this plan's tier replaces the plan SKU with the same `code`, and custom SKUs for codes the plan does not have are included. Empty when the plan has no `id`.
  */
 
 /**
@@ -2424,7 +2447,7 @@ import { Client } from 'webfunction';
  * @property {string} name - The name of the role.
  * @property {string} description - A brief description of the role's purpose and permissions.
  * @property {(true|false)} custom - Indicates whether the role is a custom role created by the merchant or a default system role.
- * @property {("authorize_payout"|"view_team"|"view_settings"|"view_contacts"|"view_transactions"|"view_statements"|"view_payouts"|"view_plan"|"view_disputes"|"manage_team"|"manage_settings"|"manage_contacts"|"manage_transactions"|"manage_payouts"|"manage_plan"|"manage_developer_settings"|"manage_terminals"|"manage_disputes")} permissions - An array of permissions the role gives.
+ * @property {Array<"authorize_payout"|"view_team"|"view_settings"|"view_contacts"|"view_transactions"|"view_statements"|"view_payouts"|"view_plan"|"view_disputes"|"manage_team"|"manage_settings"|"manage_contacts"|"manage_transactions"|"manage_payouts"|"manage_plan"|"manage_developer_settings"|"manage_terminals"|"manage_disputes">} permissions - An array of permissions the role gives.
  */
 
 /**
@@ -2456,7 +2479,7 @@ import { Client } from 'webfunction';
  * @property {("HTTP"|"HTTPS")} protocol - The protocol used for sending webhook events (e.g., `HTTPS`).
  * @property {("SHA256"|"HMAC_SHA256"|"ED25519")} signature_type - The type of signature that will be sent in the header of webhooks.
  * @property {string} verification_key - The key used to verify webhook signatures.
- * @property {("PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED")} events - List of event types that this webhook endpoint will receive.
+ * @property {Array<"PAYMENT_COMPLETED"|"PAYMENT_VOIDED"|"PAYMENT_REVERSED"|"PAYMENT_CANCELLED"|"PAYMENT_AUTHORIZED"|"PAYMENT_EXPIRED"|"PAYOUT_COMPLETED"|"TOPUP_SETTLED">} events - List of event types that this webhook endpoint will receive.
  * @property {number} created_at - The timestamp of the key creation as a Unix timestamp.
  */
 
@@ -2480,7 +2503,7 @@ import { Client } from 'webfunction';
  * @property {number} revision_time - The date and time when the plan was last revised.
  * @property {boolean} selectable - Indicates whether the plan can be selected by the merchant via self-service.
  * @property {number} rank - The ordering of the plan's tier. Selecting a plan whose rank is greater than or equal to the current plan's rank takes effect immediately; selecting a lower rank is scheduled for the start of the next billing month.
- * @property {Array<PlanSkuAttributes>} skus - List of SKUs included in this plan.
+ * @property {Array<PlanSkuAttributes>} skus - List of SKUs the merchant is billed with on this plan. A merchant's custom SKU for this plan's tier replaces the plan SKU with the same `code`, and custom SKUs for codes the plan does not have are included. Empty when the plan has no `id`.
  * @property {(string|null)} [pending_plan_id] - The identifier of the plan a scheduled change will promote to, or `null` when no change is scheduled. Only downgrades are ever scheduled; upgrades are promoted immediately.
  */
 
@@ -2563,7 +2586,7 @@ import { Client } from 'webfunction';
  * @property {string} merchant_display_name - The display name of the merchant.
  * @property {(string|null)} [legal_name] - The legal name of the merchant entity.
  * @property {string} category_code - The merchant category code (MCC) for the business.
- * @property {("DIGITAL_GOODS"|"PHYSICAL_GOODS"|"SERVICES")} product_types - List of product types the merchant will offer.
+ * @property {Array<"DIGITAL_GOODS"|"PHYSICAL_GOODS"|"SERVICES">} product_types - List of product types the merchant will offer.
  * @property {(Object|null)} [business] - Business entity details (only present for business entities).
  * @property {(Object|null)} [individual] - Individual entity details (only present for individual entities).
  * @property {Array<KeyPersonAttributes>} key_people - List of key people associated with the business (only for business entities).
@@ -2802,15 +2825,15 @@ import { Client } from 'webfunction';
  * Returns a paginated list of payments for the authenticated merchant with advanced filtering capabilities.
  * 
  * This endpoint provides comprehensive search functionality using the SearchIndex infrastructure,
- * allowing you to filter payments by various criteria including status, payment method, currency,
- * amount ranges, terminal, and date ranges.
+ * allowing you to filter payments by various criteria including status, payment method, payment method category,
+ * installment issuer, currency, amount ranges, terminal, and date ranges.
  * 
  * The response includes pagination controls with `previous` and `next` cursors that can be used
  * to navigate through the payment history efficiently.
  * 
  * ### Features:
  * - **Full-text search**: Search across payment content
- * - **Advanced filtering**: Filter by status, payment method, currency, amount, contact, terminal, dates, and fraud finding
+ * - **Advanced filtering**: Filter by status, payment method, payment method category, installment issuer, currency, amount, contact, terminal, dates, and fraud finding
  * - **Contact filtering**: Filter by contact internal ID or external ID
  * - **Date range support**: Support for specific dates, datetimes, date ranges, datetime ranges, and keywords
  * - **Pagination**: Efficient cursor-based pagination
@@ -2832,12 +2855,12 @@ import { Client } from 'webfunction';
  * - **Date range support**: Support for specific dates, datetimes, date ranges, datetime ranges, and keywords
  * - **Pagination**: Efficient cursor-based pagination
  * - **Merchant-scoped**: Only returns payouts for the authenticated merchant
- * @property {(args?: FilterTerminalsArgs) => Promise<FilterTerminalsPage>} filterTerminals - ## Filter Terminals
+ * @property {(args?: FilterTerminalsArgs) => Promise<FilterTerminalsPage>} filterTerminals - ## Filter terminals
  * 
- * Returns a paginated list of terminals for the authenticated merchant with search capabilities.
+ * Returns a paginated list of terminals for the authenticated merchant with filtering capabilities.
  * 
- * This endpoint provides full-text search functionality using the SearchIndex infrastructure,
- * allowing you to search terminals by name, external ID, and branch name.
+ * Filter by terminal name, branch name (substring match), creation date, and connection date. Free-text
+ * `terms` matches terminal name, terminal ID, external ID, and branch name. Results are ordered by creation date descending.
  * @property {(args?: FilterTopupsArgs) => Promise<FilterTopupsPage>} filterTopups - ## Filter topups
  * 
  * Returns a paginated list of topups for the authenticated merchant with advanced filtering capabilities.
@@ -3050,6 +3073,13 @@ import { Client } from 'webfunction';
  * - Checking the configuration of multiple installations
  * - Finding installations that need to be updated or disabled
  * - Getting an overview of your integration across different platforms
+ * @property {(args?: any) => Promise<Array<ListInstallmentIssuersResult>>} listInstallmentIssuers - ## List installment issuers
+ * 
+ * Returns the card issuers the authenticated merchant can take installment payments with, sorted by display name.
+ * 
+ * Use an issuer's `issuer_id` with `filter-payments` to list the payments made with cards from that issuer.
+ * 
+ * Returns an empty array when the merchant does not offer installments.
  * @property {(args?: ListInvoicesArgs) => Promise<ListInvoicesPage>} listInvoices - ## List invoices
  * 
  * Returns a paginated list of invoices for the authenticated merchant.
@@ -3143,7 +3173,7 @@ import { Client } from 'webfunction';
  * @property {(args?: any) => Promise<Array<string>>} listPermissions - ## List all permissions
  * 
  * Retrieves a list of all permissions available for roles within the merchant account.
- * These permissions can be assigned to custom roles created by the merchant.
+ * These permissions can be assigned to custom roles created by the merchant, and to API keys.
  * @property {(args?: ListPlannedMaintenancesArgs) => Promise<Array<PlannedMaintenanceAttributes>>} listPlannedMaintenances - ## List planned maintenances
  * 
  * Retrieve recent and upcoming planned maintenance windows for our services.
@@ -3151,6 +3181,8 @@ import { Client } from 'webfunction';
  * Retrieve a list of all current plans available for the merchant.
  * Plans represent different levels of service or pricing plans currently available.
  * The `selectable` flag indicates if a plan can be subscribed to via self-service.
+ * 
+ * `skus` lists the SKUs the merchant would be billed with on each plan, including the merchant's custom SKUs for the plan's tier.
  * @property {(args: ListRefundsByPaymentArgs) => Promise<ListRefundsByPaymentPage>} listRefundsByPayment - ## List refunds by payment
  * 
  * Returns a paginated list of refunds for a specific payment belonging to the authenticated merchant.
@@ -3403,6 +3435,8 @@ import { Client } from 'webfunction';
  * 
  * The response includes information about the plan's tier, which indicates the level of service provided.
  * It also reports `pending_plan_id`, the plan a scheduled change will promote to, or `null` when no change is scheduled.
+ * 
+ * `skus` lists the SKUs the merchant is billed with, including the merchant's custom SKUs for the plan's tier.
  * @property {(args: RetrieveDisputePerformanceArgs) => Promise<RetrieveDisputePerformanceResult>} retrieveDisputePerformance - ## Retrieve dispute performance
  * 
  * Returns dispute performance data for the authenticated merchant based on the specified date range.
@@ -4507,15 +4541,15 @@ export async function createClient(options = {}) {
      * Returns a paginated list of payments for the authenticated merchant with advanced filtering capabilities.
      *
      * This endpoint provides comprehensive search functionality using the SearchIndex infrastructure,
-     * allowing you to filter payments by various criteria including status, payment method, currency,
-     * amount ranges, terminal, and date ranges.
+     * allowing you to filter payments by various criteria including status, payment method, payment method category,
+     * installment issuer, currency, amount ranges, terminal, and date ranges.
      *
      * The response includes pagination controls with `previous` and `next` cursors that can be used
      * to navigate through the payment history efficiently.
      *
      * ### Features:
      * - **Full-text search**: Search across payment content
-     * - **Advanced filtering**: Filter by status, payment method, currency, amount, contact, terminal, dates, and fraud finding
+     * - **Advanced filtering**: Filter by status, payment method, payment method category, installment issuer, currency, amount, contact, terminal, dates, and fraud finding
      * - **Contact filtering**: Filter by contact internal ID or external ID
      * - **Date range support**: Support for specific dates, datetimes, date ranges, datetime ranges, and keywords
      * - **Pagination**: Efficient cursor-based pagination
@@ -4559,12 +4593,12 @@ export async function createClient(options = {}) {
     },
 
     /**
-     * ## Filter Terminals
+     * ## Filter terminals
      *
-     * Returns a paginated list of terminals for the authenticated merchant with search capabilities.
+     * Returns a paginated list of terminals for the authenticated merchant with filtering capabilities.
      *
-     * This endpoint provides full-text search functionality using the SearchIndex infrastructure,
-     * allowing you to search terminals by name, external ID, and branch name.
+     * Filter by terminal name, branch name (substring match), creation date, and connection date. Free-text
+     * `terms` matches terminal name, terminal ID, external ID, and branch name. Results are ordered by creation date descending.
      *
      * @param {FilterTerminalsArgs} [args]
      * @returns {Promise<FilterTerminalsPage>}
@@ -5228,6 +5262,24 @@ export async function createClient(options = {}) {
     },
 
     /**
+     * ## List installment issuers
+     *
+     * Returns the card issuers the authenticated merchant can take installment payments with, sorted by display name.
+     *
+     * Use an issuer's `issuer_id` with `filter-payments` to list the payments made with cards from that issuer.
+     *
+     * Returns an empty array when the merchant does not offer installments.
+     *
+     * @param {any} [args]
+     * @returns {Promise<Array<ListInstallmentIssuersResult>>}
+     * @throws {import('webfunction').UnexpectedStatusCodeError} Non-200, non-400 response.
+     * @throws {import('webfunction').JsonParseError} Response body wasn't valid JSON.
+     */
+    listInstallmentIssuers(args) {
+      return rawClient.call('list-installment-issuers', args);
+    },
+
+    /**
      * ## List invoices
      *
      * Returns a paginated list of invoices for the authenticated merchant.
@@ -5473,7 +5525,7 @@ export async function createClient(options = {}) {
      * ## List all permissions
      *
      * Retrieves a list of all permissions available for roles within the merchant account.
-     * These permissions can be assigned to custom roles created by the merchant.
+     * These permissions can be assigned to custom roles created by the merchant, and to API keys.
      *
      * @param {any} [args]
      * @returns {Promise<Array<string>>}
@@ -5503,6 +5555,8 @@ export async function createClient(options = {}) {
      * Retrieve a list of all current plans available for the merchant.
      * Plans represent different levels of service or pricing plans currently available.
      * The `selectable` flag indicates if a plan can be subscribed to via self-service.
+     *
+     * `skus` lists the SKUs the merchant would be billed with on each plan, including the merchant's custom SKUs for the plan's tier.
      *
      * @param {any} [args]
      * @returns {Promise<Array<PlanAttributes>>}
@@ -6168,6 +6222,8 @@ export async function createClient(options = {}) {
      *
      * The response includes information about the plan's tier, which indicates the level of service provided.
      * It also reports `pending_plan_id`, the plan a scheduled change will promote to, or `null` when no change is scheduled.
+     *
+     * `skus` lists the SKUs the merchant is billed with, including the merchant's custom SKUs for the plan's tier.
      *
      * @param {any} [args]
      * @returns {Promise<CurrentPlanAttributes>}

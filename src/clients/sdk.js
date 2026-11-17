@@ -107,6 +107,8 @@ import { Client } from 'webfunction';
  * @property {("color"|"image")} sidebar_background_type - The type of sidebar background to use (color or image).
  * @property {boolean} tile_sidebar_image - Whether to tile the sidebar image to fill the entire sidebar area.
  * @property {boolean} hide_logo - Whether to hide the logo completely from the payment interface.
+ * @property {string} shop_name_font_family - Font family for the shop name shown when no logo is displayed.
+ * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} shop_name_font_variant - Font weight variant for the shop name.
  * @property {string} heading_font_family - Font family for headings.
  * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} heading_font_variant - Font weight variant for headings.
  * @property {string} body_font_family - Font family for body text.
@@ -146,6 +148,7 @@ import { Client } from 'webfunction';
  * @property {string} currency - The currency code for the payment amount (e.g. 'THB', 'USD').
  * @property {string} payment_method - The name of the payment method.
  * @property {string} payment_method_display_name - The display name of the payment method.
+ * @property {(string|null)} [card_first_digits] - The first 6 digits of the card number. Null for non-card payment methods or card sessions without a token.
  * @property {(string|null)} [card_last_digits] - The last 2 digits of the card number. Null for non-card payment methods or card sessions without a token.
  * @property {(string|null)} [card_network] - The card network, such as visa or mastercard. Null for non-card payment methods or card sessions without a token.
  * @property {(number|null)} [installment_term] - Number of monthly installments for this payment. Null for non-installment payment methods.

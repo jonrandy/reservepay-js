@@ -22,6 +22,13 @@ import { Client } from 'webfunction';
  */
 
 /**
+ * @typedef {Object} ConnectDeviceByCodeResult
+ * @property {string} merchant_id - The merchant ID this terminal belongs to.
+ * @property {string} terminal_id - Terminal ID (`trm_…`) the device is connected to.
+ * @property {string} key - API key token for this device, prefixed with `reservepay_`.
+ */
+
+/**
  * @typedef {Object} RetrieveInstallationSettingsArgs
  * @property {string} merchant_id - The merchant ID this terminal belongs to.
  * @property {string} terminal_id - Terminal ID (`trm_…`).
@@ -63,6 +70,8 @@ import { Client } from 'webfunction';
  * @property {("color"|"image")} sidebar_background_type - The type of sidebar background to use (color or image).
  * @property {boolean} tile_sidebar_image - Whether to tile the sidebar image to fill the entire sidebar area.
  * @property {boolean} hide_logo - Whether to hide the logo completely from the payment interface.
+ * @property {string} shop_name_font_family - Font family for the shop name shown when no logo is displayed.
+ * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} shop_name_font_variant - Font weight variant for the shop name.
  * @property {string} heading_font_family - Font family for headings.
  * @property {("Thin"|"ExtraLight"|"Light"|"Regular"|"Medium"|"SemiBold"|"Bold"|"ExtraBold"|"Black")} heading_font_variant - Font weight variant for headings.
  * @property {string} body_font_family - Font family for body text.
@@ -105,11 +114,12 @@ import { Client } from 'webfunction';
  * If the terminal is disabled, `NOT_ENABLED` is returned.
  * 
  * If the terminal has no installation linked, `NOT_CONFIGURED` is returned.
- * @property {(args: ConnectDeviceByCodeArgs) => Promise<string>} connectDeviceByCode - ## Connect a device with a temporary challenge
+ * @property {(args: ConnectDeviceByCodeArgs) => Promise<ConnectDeviceByCodeResult>} connectDeviceByCode - ## Connect a device with a temporary challenge
  * 
  * Connect a device to the terminal that owns the given 8-digit temporary challenge.
- * The code must be unexpired. On success the device is bound, a fresh API key token
- * (prefixed with `reservepay_`) is returned, and the temporary challenge is cleared.
+ * The code must be unexpired. On success the device is bound, the temporary challenge
+ * is cleared, and the response holds the merchant ID, the terminal ID and a fresh API
+ * key token (prefixed with `reservepay_`).
  * 
  * If the terminal is already bound to a different device, `ALREADY_CONNECTED` is returned.
  * If it is bound to the same device, the previous key is revoked and a new one is issued.
@@ -189,8 +199,9 @@ export async function createClient(options = {}) {
      * ## Connect a device with a temporary challenge
      *
      * Connect a device to the terminal that owns the given 8-digit temporary challenge.
-     * The code must be unexpired. On success the device is bound, a fresh API key token
-     * (prefixed with `reservepay_`) is returned, and the temporary challenge is cleared.
+     * The code must be unexpired. On success the device is bound, the temporary challenge
+     * is cleared, and the response holds the merchant ID, the terminal ID and a fresh API
+     * key token (prefixed with `reservepay_`).
      *
      * If the terminal is already bound to a different device, `ALREADY_CONNECTED` is returned.
      * If it is bound to the same device, the previous key is revoked and a new one is issued.
@@ -200,7 +211,7 @@ export async function createClient(options = {}) {
      * If the terminal has no installation linked, `NOT_CONFIGURED` is returned.
      *
      * @param {ConnectDeviceByCodeArgs} args
-     * @returns {Promise<string>}
+     * @returns {Promise<ConnectDeviceByCodeResult>}
      * @throws {import('webfunction').BadRequestError} ALREADY_CONNECTED - The terminal is connected to another device.
      * @throws {import('webfunction').BadRequestError} INVALID_CHALLENGE - The code is unknown or has expired.
      * @throws {import('webfunction').BadRequestError} NOT_ENABLED - The terminal exists but is disabled; enable it before connecting a device.
